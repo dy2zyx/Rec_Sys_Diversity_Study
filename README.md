@@ -76,6 +76,6 @@ For example, to run the code for the Anime dataset and the SVD recommender:
 This script will:
 * Load training data and test data
 * Construct the recommender based on the training data
-* Using the constructed recommender to predict relevance scores for each user and each of the user's unrated items
+* Use the constructed recommender to predict relevance scores for each user and each of the user's unrated items
 * Run the greedy diversification optimization for both the classic and the personalised objective functions
 * Print and save the results
