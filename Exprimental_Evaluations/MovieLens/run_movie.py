@@ -12,6 +12,7 @@ from surprise import Reader, Dataset, KNNWithZScore, SVD, NMF
 from matplotlib import pyplot as plt
 
 N_OF_REC = 10
+N_OF_CANDIDAT = 100
 alpha_list = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1]
 ######################################################################
 ##########                                                  ##########
@@ -43,6 +44,8 @@ users_have_liked_items = set([user for (user, item, rating) in testset if rating
 test_set = [(user, item) for (user, item, rating) in testset if rating > 3]
 
 users_for_test = list(users_have_liked_items) # the whole set of users in testset
+
+print(len(users_for_test))
 
 user_relevant_items_in_testset = defaultdict(list)
 
@@ -242,12 +245,12 @@ with open('results/CBF/accuracy_cbf.csv', 'w') as accu_cbf:
     print('-----------PersDiv-----------\n')
     for alpha in alpha_list:
         print('Alpha is: ', alpha)
-        bg_optimise_cbf(M=200, n=N_OF_REC, alpha=alpha, persDiv=True, candidate_items_dict=user_candidate_items_dict_cbf)
+        bg_optimise_cbf(M=N_OF_CANDIDAT, n=N_OF_REC, alpha=alpha, persDiv=True, candidate_items_dict=user_candidate_items_dict_cbf)
     print('=============================\n')
     print('-----------Classic Div-----------\n')
     for alpha in alpha_list:
         print('Alpha is: ', alpha)
-        bg_optimise_cbf(M=200, n=N_OF_REC, alpha=alpha, persDiv=False, candidate_items_dict=user_candidate_items_dict_cbf)
+        bg_optimise_cbf(M=N_OF_CANDIDAT, n=N_OF_REC, alpha=alpha, persDiv=False, candidate_items_dict=user_candidate_items_dict_cbf)
 
 
 ######################################################################
@@ -334,12 +337,12 @@ with open('results/TopPopular/accuracy_top_pop.csv', 'w') as accu_top_pop:
     print('-----------PersDiv-----------\n')
     for alpha in alpha_list:
         print('Alpha is: ', alpha)
-        bg_optimise_top_pop(M=200, n=N_OF_REC, alpha=alpha, persDiv=True, candidate_items_dict=user_candidate_items_dict_top_pop)
+        bg_optimise_top_pop(M=N_OF_CANDIDAT, n=N_OF_REC, alpha=alpha, persDiv=True, candidate_items_dict=user_candidate_items_dict_top_pop)
     print('=============================\n')
     print('-----------Classic Div-----------\n')
     for alpha in alpha_list:
         print('Alpha is: ', alpha)
-        bg_optimise_top_pop(M=200, n=N_OF_REC, alpha=alpha, persDiv=False, candidate_items_dict=user_candidate_items_dict_top_pop)
+        bg_optimise_top_pop(M=N_OF_CANDIDAT, n=N_OF_REC, alpha=alpha, persDiv=False, candidate_items_dict=user_candidate_items_dict_top_pop)
 
 
 ######################################################################
@@ -426,18 +429,18 @@ with open('results/CBF_TopPopular/accuracy_cbf_pop.csv', 'w') as accu_cbf_pop:
     print('-----------PersDiv-----------\n')
     for alpha in alpha_list:
         print('Alpha is: ', alpha)
-        bg_optimise_cbf_pop(M=200, n=N_OF_REC, alpha=alpha, persDiv=True, candidate_items_dict=user_candidate_items_dict_cbf_pop)
+        bg_optimise_cbf_pop(M=N_OF_CANDIDAT, n=N_OF_REC, alpha=alpha, persDiv=True, candidate_items_dict=user_candidate_items_dict_cbf_pop)
     print('=============================\n')
     print('-----------Classic Div-----------\n')
     for alpha in alpha_list:
         print('Alpha is: ', alpha)
-        bg_optimise_cbf_pop(M=200, n=N_OF_REC, alpha=alpha, persDiv=False, candidate_items_dict=user_candidate_items_dict_cbf_pop)
+        bg_optimise_cbf_pop(M=N_OF_CANDIDAT, n=N_OF_REC, alpha=alpha, persDiv=False, candidate_items_dict=user_candidate_items_dict_cbf_pop)
 
-######################################################################
-##########                                                  ##########
-##########                    IBCF                          ##########
-##########                                                  ##########
-######################################################################
+#####################################################################
+#########                                                  ##########
+#########                    IBCF                          ##########
+#########                                                  ##########
+#####################################################################
 print("IBCF...")
 
 path_user_candidate_items = 'candidates_dicts/user_candidate_items_dict_ibcf.pickle'
@@ -517,12 +520,12 @@ with open('results/IBCF/accuracy_ibcf.csv', 'w') as accu_ibcf:
     print('-----------PersDiv-----------\n')
     for alpha in alpha_list:
         print('Alpha is: ', alpha)
-        bg_optimise_ibcf(M=200, n=N_OF_REC, alpha=alpha, persDiv=True, candidate_items_dict=user_candidate_items_dict_ibcf)
+        bg_optimise_ibcf(M=N_OF_CANDIDAT, n=N_OF_REC, alpha=alpha, persDiv=True, candidate_items_dict=user_candidate_items_dict_ibcf)
     print('=============================\n')
     print('-----------Classic Div-----------\n')
     for alpha in alpha_list:
         print('Alpha is: ', alpha)
-        bg_optimise_ibcf(M=200, n=N_OF_REC, alpha=alpha, persDiv=False, candidate_items_dict=user_candidate_items_dict_ibcf)
+        bg_optimise_ibcf(M=N_OF_CANDIDAT, n=N_OF_REC, alpha=alpha, persDiv=False, candidate_items_dict=user_candidate_items_dict_ibcf)
 
 
 ######################################################################
@@ -609,12 +612,12 @@ with open('results/SVD/accuracy_svd.csv', 'w') as accu_svd:
     print('-----------PersDiv-----------\n')
     for alpha in alpha_list:
         print('Alpha is: ', alpha)
-        bg_optimise_svd(M=200, n=N_OF_REC, alpha=alpha, persDiv=True, candidate_items_dict=user_candidate_items_dict_svd)
+        bg_optimise_svd(M=N_OF_CANDIDAT, n=N_OF_REC, alpha=alpha, persDiv=True, candidate_items_dict=user_candidate_items_dict_svd)
     print('=============================\n')
     print('-----------Classic Div-----------\n')
     for alpha in alpha_list:
         print('Alpha is: ', alpha)
-        bg_optimise_svd(M=200, n=N_OF_REC, alpha=alpha, persDiv=False, candidate_items_dict=user_candidate_items_dict_svd)
+        bg_optimise_svd(M=N_OF_CANDIDAT, n=N_OF_REC, alpha=alpha, persDiv=False, candidate_items_dict=user_candidate_items_dict_svd)
 
 
 ######################################################################
@@ -701,12 +704,12 @@ with open('results/DNN/accuracy_dnn.csv', 'w') as accu_dnn:
     print('-----------PersDiv-----------\n')
     for alpha in alpha_list:
         print('Alpha is: ', alpha)
-        bg_optimise_dnn(M=200, n=N_OF_REC, alpha=alpha, persDiv=True, candidate_items_dict=user_candidate_items_dict_dnn)
+        bg_optimise_dnn(M=N_OF_CANDIDAT, n=N_OF_REC, alpha=alpha, persDiv=True, candidate_items_dict=user_candidate_items_dict_dnn)
     print('=============================\n')
     print('-----------Classic Div-----------\n')
     for alpha in alpha_list:
         print('Alpha is: ', alpha)
-        bg_optimise_dnn(M=200, n=N_OF_REC, alpha=alpha, persDiv=False, candidate_items_dict=user_candidate_items_dict_dnn)
+        bg_optimise_dnn(M=N_OF_CANDIDAT, n=N_OF_REC, alpha=alpha, persDiv=False, candidate_items_dict=user_candidate_items_dict_dnn)
 
 
 ######################################################################
@@ -721,6 +724,8 @@ path_user_candidate_items = 'candidates_dicts/user_candidate_items_dict_kge.pick
 with open(path_user_candidate_items, 'rb') as user_candidate_items:
     user_candidate_items_dict_kge = pickle.load(user_candidate_items)
 
+users_for_test = set(users_for_test).intersection(set(user_candidate_items_dict_kge.keys()))
+print(len(users_for_test))
 
 def bg_optimise_kge(M, n, alpha, persDiv, candidate_items_dict):
     algo = "KGE"
@@ -793,9 +798,9 @@ with open('results/KGE/accuracy_kge.csv', 'w') as accu_kge:
     print('-----------PersDiv-----------\n')
     for alpha in alpha_list:
         print('Alpha is: ', alpha)
-        bg_optimise_kge(M=200, n=N_OF_REC, alpha=alpha, persDiv=True, candidate_items_dict=user_candidate_items_dict_kge)
+        bg_optimise_kge(M=N_OF_CANDIDAT, n=N_OF_REC, alpha=alpha, persDiv=True, candidate_items_dict=user_candidate_items_dict_kge)
     print('=============================\n')
     print('-----------Classic Div-----------\n')
     for alpha in alpha_list:
         print('Alpha is: ', alpha)
-        bg_optimise_kge(M=200, n=N_OF_REC, alpha=alpha, persDiv=False, candidate_items_dict=user_candidate_items_dict_kge)
+        bg_optimise_kge(M=N_OF_CANDIDAT, n=N_OF_REC, alpha=alpha, persDiv=False, candidate_items_dict=user_candidate_items_dict_kge)

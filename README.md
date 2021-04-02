@@ -30,11 +30,11 @@ The experiments of the research work are based on three real-world rating datase
 
 Each of the three dataset folders contains the following data:
 
-* The trainset (80%) and the testset (20%), containing lists of ratings in (user, item, rating) formats
-* The mapping file containing the mapped items and their corresponding DBpedia URIs
-* The learnt embeddings of entities and relations within two knowledge graphs:
+* The trainset (80%) and the testset (20%), containing lists of ratings in (user, item, rating) formats. Rating datasets are saved in pickle files.
+* The mapping file containing the mapped items and their corresponding DBpedia URIs. These mappings could be useful for future studies.
+* The learnt entity and relation embeddings within two knowledge graphs:
   * ICKG (Item Content Knowledge Graph)
-  * ICKG+UPKG (hybrid knowledge graph containing both item contents data (i.e. DBpedia properties) and user preferences data (i.e. ratings))
+  * ICKG+UPKG (hybrid knowledge graph containing both item contents data (i.e. DBpedia properties) and user preferences data (i.e. user ratings))
 
 #### Hyperparamter Tuning
 
@@ -42,7 +42,7 @@ Each considered recommendation approach is optimized towards accuracy on each da
 
 #### Experimental evaluations
 
-For each of the 3 datasets and for each of the 7 recommenders, we created a script to run the experiments. The 'generate_candidates_{dataset_name}.py' script is used to generate, for each recommender and each dataset, a dictionary that stores "user -> list of condidate items (with predicted accuracy scores)". This is the input for our diversity study.
+For each of the 3 datasets and for each of the 7 recommenders, we created a script to run the experiments. The 'generate_candidates_{dataset_name}.py' scripts are used to generate, for each recommender system and each dataset, a dictionary that stores "user -> list of condidate items (with predicted accuracy scores)". These generated candidates are then used by the 'run_{dataset_name}.py' scripts for running the greedy post-processing diversification optimization.
 
 ### Run the exprimentations
 
@@ -84,6 +84,3 @@ In addition, the following Python packages are also needed:
   conda install -c conda-forge bayesian-optimization
     ```
 
-#### Example for running the scripts.
-
-For running examples, please refer to the 'NoteBook_Examples' folder.

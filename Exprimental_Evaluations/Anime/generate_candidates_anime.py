@@ -4,7 +4,14 @@ import numpy as np
 import pandas as pd
 import collections
 import math
+
 import torch
+import scipy.sparse as sp
+import torch.nn as nn
+import torch.optim as optim
+import torch.utils.data as data
+import torch.backends.cudnn as cudnn
+
 from collections import defaultdict
 from six import iteritems
 from scipy.spatial.distance import cosine
@@ -60,11 +67,11 @@ for user in user_items_in_test_set.keys():
     user_unrated_items[user] = un_rated_items
 ######
 
-######################################################################
-##########                                                  ##########
-##########                        CBF                       ##########
-##########                                                  ##########
-######################################################################
+#####################################################################
+#########                                                  ##########
+#########                        CBF                       ##########
+#########                                                  ##########
+#####################################################################
 print("Computation starts...")
 print("CBF...")
 
@@ -99,7 +106,7 @@ def recommend_topN_cbf(user):
         predicted_rating = predict_rating_cbf(user, un_rated_item)
         top_n.append((un_rated_item, predicted_rating))
     top_n.sort(key=lambda x:x[1], reverse=True)
-    return top_n[:1000]
+    return top_n[:500]
 
 
 user_candidate_items_dict_cbf = defaultdict(list)
@@ -135,22 +142,22 @@ for item in item_popularity_dict.keys():
     item_popularity_dict_norm[item] = item_popu
 
 
-def recommend_topN_top_pop(user):
-    top_n = list()
-    for un_rated_item in user_unrated_items[user]:
-        item_popularity = item_popularity_dict_norm[un_rated_item] if un_rated_item in item_popularity_dict_norm.keys() else 0
-        top_n.append((un_rated_item, item_popularity))
-    top_n.sort(key=lambda x:x[1], reverse=True)
-    return top_n[:1000]
+# def recommend_topN_top_pop(user):
+#     top_n = list()
+#     for un_rated_item in user_unrated_items[user]:
+#         item_popularity = item_popularity_dict_norm[un_rated_item] if un_rated_item in item_popularity_dict_norm.keys() else 0
+#         top_n.append((un_rated_item, item_popularity))
+#     top_n.sort(key=lambda x:x[1], reverse=True)
+#     return top_n[:500]
 
 
-user_candidate_items_dict_top_pop = defaultdict(list)
-for user in user_unrated_items.keys():
-    user_candidate_items = recommend_topN_top_pop(user)
-    user_candidate_items_dict_top_pop[user] = user_candidate_items
+# user_candidate_items_dict_top_pop = defaultdict(list)
+# for user in user_unrated_items.keys():
+#     user_candidate_items = recommend_topN_top_pop(user)
+#     user_candidate_items_dict_top_pop[user] = user_candidate_items
 
-with open('candidates_dicts/user_candidate_items_dict_top_pop.pickle', 'wb') as f1:
-    pickle.dump(user_candidate_items_dict_top_pop, f1, pickle.HIGHEST_PROTOCOL)
+# with open('candidates_dicts/user_candidate_items_dict_top_pop.pickle', 'wb') as f1:
+#     pickle.dump(user_candidate_items_dict_top_pop, f1, pickle.HIGHEST_PROTOCOL)
 
 
 ######################################################################
@@ -173,12 +180,13 @@ def recommend_topN_cbf_pop(user, weight):
         score = weight * item_popularity + (1 - weight) * cbf_score
         top_n.append((un_rated_item, score))
     top_n.sort(key=lambda x:x[1], reverse=True)
-    return top_n[:1000]
+    return top_n[:500]
 
+__WEIGHT = 0.4176 # best value
 
 user_candidate_items_dict_cbf_pop = defaultdict(list)
 for user in user_unrated_items.keys():
-    user_candidate_items = recommend_topN_cbf_pop(user)
+    user_candidate_items = recommend_topN_cbf_pop(user, __WEIGHT)
     user_candidate_items_dict_cbf_pop[user] = user_candidate_items
 
 with open('candidates_dicts/user_candidate_items_dict_cbf_pop.pickle', 'wb') as f1:
@@ -199,7 +207,9 @@ reader = Reader(rating_scale=(1, 10))
 dataset = Dataset.load_from_df(data, reader)
 train_set = dataset.build_full_trainset()
 
-ibcf_model = KNNWithZScore(k=40, sim_options={'name': 'cosine', 'user_based': False}, verbose=False)
+K__ = 1
+
+ibcf_model = KNNWithZScore(k=K__, sim_options={'name': 'cosine', 'user_based': False}, verbose=False)
 ibcf_model.fit(train_set)
 
 
@@ -209,7 +219,7 @@ def recommend_topN_ibcf(user, model):
         predicted_rating = model.predict(user, un_rated_item)[3]
         top_n.append((un_rated_item, predicted_rating))
     top_n.sort(key=lambda x: x[1], reverse=True)
-    return top_n[:1000]
+    return top_n[:500]
 
 user_candidate_items_dict_ibcf = defaultdict(list)
 for user in user_unrated_items.keys():
@@ -229,7 +239,8 @@ print("SVD...")
 ##################################################
 ##########   Recommender construction   ##########
 ##################################################
-svd_model = SVD()
+lr_all, n_epochs, n_factors, reg_all = 0.0003, 3, 200, 0.0626
+svd_model = SVD(n_factors=n_factors, n_epochs=n_epochs, lr_all=lr_all, reg_all=reg_all)
 svd_model.fit(train_set)
 
 
@@ -239,7 +250,7 @@ def recommend_topN_svd(user, model):
         predicted_rating = model.predict(user, un_rated_item)[3]
         top_n.append((un_rated_item, predicted_rating))
     top_n.sort(key=lambda x: x[1], reverse=True)
-    return top_n[:1000]
+    return top_n[:500]
 
 user_candidate_items_dict_svd = defaultdict(list)
 for user in user_unrated_items.keys():
@@ -249,20 +260,120 @@ for user in user_unrated_items.keys():
 with open('candidates_dicts/user_candidate_items_dict_svd.pickle', 'wb') as f1:
     pickle.dump(user_candidate_items_dict_svd, f1, pickle.HIGHEST_PROTOCOL)
 
-######################################################################
-##########                                                  ##########
-##########                    DNN                           ##########
-##########                                                  ##########
-######################################################################
+#####################################################################
+#########                                                  ##########
+#########                    DNN                           ##########
+#########                                                  ##########
+#####################################################################
 print("DNN...")
-import sys
-sys.path.insert(0, '/Users/yudu/PycharmProjects/NCF')
+# import sys
+# sys.path.insert(0, '/Users/yudu/PycharmProjects/NCF')
+
+class NCF(nn.Module):
+    def __init__(self, user_num, item_num, factor_num, num_layers,
+                 dropout, model, GMF_model=None, MLP_model=None):
+        super(NCF, self).__init__()
+
+        self.dropout = dropout
+        self.model = model
+        self.GMF_model = GMF_model
+        self.MLP_model = MLP_model
+
+        self.embed_user_GMF = nn.Embedding(user_num, factor_num)
+        self.embed_item_GMF = nn.Embedding(item_num, factor_num)
+        self.embed_user_MLP = nn.Embedding(
+            user_num, factor_num * (2 ** (num_layers - 1)))
+        self.embed_item_MLP = nn.Embedding(
+            item_num, factor_num * (2 ** (num_layers - 1)))
+
+        MLP_modules = []
+        for i in range(num_layers):
+            input_size = factor_num * (2 ** (num_layers - i))
+            MLP_modules.append(nn.Dropout(p=self.dropout))
+            MLP_modules.append(nn.Linear(input_size, input_size // 2))
+            MLP_modules.append(nn.ReLU())
+        self.MLP_layers = nn.Sequential(*MLP_modules)
+
+        if self.model in ['MLP', 'GMF']:
+            predict_size = factor_num
+        else:
+            predict_size = factor_num * 2
+        self.predict_layer = nn.Linear(predict_size, 1)
+
+        self._init_weight_()
+
+    def _init_weight_(self):
+        """ We leave the weights initialization here. """
+        if not self.model == 'NeuMF-pre':
+            nn.init.normal_(self.embed_user_GMF.weight, std=0.01)
+            nn.init.normal_(self.embed_user_MLP.weight, std=0.01)
+            nn.init.normal_(self.embed_item_GMF.weight, std=0.01)
+            nn.init.normal_(self.embed_item_MLP.weight, std=0.01)
+
+            for m in self.MLP_layers:
+                if isinstance(m, nn.Linear):
+                    nn.init.xavier_uniform_(m.weight)
+            nn.init.kaiming_uniform_(self.predict_layer.weight,
+                                     a=1, nonlinearity='sigmoid')
+
+            for m in self.modules():
+                if isinstance(m, nn.Linear) and m.bias is not None:
+                    m.bias.data.zero_()
+        else:
+            # embedding layers
+            self.embed_user_GMF.weight.data.copy_(
+                self.GMF_model.embed_user_GMF.weight)
+            self.embed_item_GMF.weight.data.copy_(
+                self.GMF_model.embed_item_GMF.weight)
+            self.embed_user_MLP.weight.data.copy_(
+                self.MLP_model.embed_user_MLP.weight)
+            self.embed_item_MLP.weight.data.copy_(
+                self.MLP_model.embed_item_MLP.weight)
+
+            # mlp layers
+            for (m1, m2) in zip(
+                    self.MLP_layers, self.MLP_model.MLP_layers):
+                if isinstance(m1, nn.Linear) and isinstance(m2, nn.Linear):
+                    m1.weight.data.copy_(m2.weight)
+                    m1.bias.data.copy_(m2.bias)
+
+            # predict layers
+            predict_weight = torch.cat([
+                self.GMF_model.predict_layer.weight,
+                self.MLP_model.predict_layer.weight], dim=1)
+            precit_bias = self.GMF_model.predict_layer.bias + \
+                          self.MLP_model.predict_layer.bias
+
+            self.predict_layer.weight.data.copy_(0.5 * predict_weight)
+            self.predict_layer.bias.data.copy_(0.5 * precit_bias)
+
+    def forward(self, user, item):
+        if not self.model == 'MLP':
+            embed_user_GMF = self.embed_user_GMF(user)
+            embed_item_GMF = self.embed_item_GMF(item)
+            output_GMF = embed_user_GMF * embed_item_GMF
+        if not self.model == 'GMF':
+            embed_user_MLP = self.embed_user_MLP(user)
+            embed_item_MLP = self.embed_item_MLP(item)
+            interaction = torch.cat((embed_user_MLP, embed_item_MLP), -1)
+            output_MLP = self.MLP_layers(interaction)
+
+        if self.model == 'GMF':
+            concat = output_GMF
+        elif self.model == 'MLP':
+            concat = output_MLP
+        else:
+            concat = torch.cat((output_GMF, output_MLP), -1)
+
+        prediction = self.predict_layer(concat)
+        return prediction.view(-1)
 
 ##################################################
 ##########   Recommender construction   ##########
 ##################################################
-model_file = "model.pth"
-neuMF = torch.load(model_file)
+model_file = "../../HyperParamTunning/Anime/DNN/NeuMF-end_anime.pth"
+device = torch.device('cpu')
+neuMF = torch.load(model_file, map_location=device)
 neuMF.eval()
 
 
@@ -273,7 +384,7 @@ def recommend_topN_dnn(user, model):
         predicted_rating = predicted_rating.item()
         top_n.append((un_rated_item, predicted_rating))
     top_n.sort(key=lambda x:x[1], reverse=True)
-    return top_n[:1000]
+    return top_n[:500]
 
 user_candidate_items_dict_dnn = defaultdict(list)
 for user in user_unrated_items.keys():
@@ -283,14 +394,14 @@ for user in user_unrated_items.keys():
 with open('candidates_dicts/user_candidate_items_dict_dnn.pickle', 'wb') as f1:
     pickle.dump(user_candidate_items_dict_dnn, f1, pickle.HIGHEST_PROTOCOL)
 
-######################################################################
-##########                                                  ##########
-##########                      KGE                         ##########
-##########                                                  ##########
-######################################################################
+#####################################################################
+#########                                                  ##########
+#########                      KGE                         ##########
+#########                                                  ##########
+#####################################################################
 print("KGE...")
-trainset_entity_embedding_file = 'dict_entity_embedding.pickle'
-trainset_relation_embedding_file = 'dict_relation_embedding.pickle'
+trainset_entity_embedding_file = '../../HyperParamTunning/Anime/KGE/train_model/dict_entity_embedding.pickle'
+trainset_relation_embedding_file = '../../HyperParamTunning/Anime/KGE/train_model/dict_relation_embedding.pickle'
 
 BASE_URI = "http://example.org/rating_ontology"
 USER = BASE_URI + "/User/User_"
@@ -311,7 +422,7 @@ def recommend_topN_kge(user):
         score = compute_score(user_embedding, r_like_embedding, item_embedding)
         top_n.append((un_rated_item, score))
     top_n.sort(key=lambda x:x[1], reverse=True)
-    return top_n[:1000]
+    return top_n[:500]
 
 
 def compute_score(h_embedding, r_embedding, t_embedding):
@@ -322,8 +433,9 @@ def compute_score(h_embedding, r_embedding, t_embedding):
 
 user_candidate_items_dict_kge = defaultdict(list)
 for user in user_unrated_items.keys():
-    user_candidate_items = recommend_topN_kge(user)
-    user_candidate_items_dict_kge[user] = user_candidate_items
+    if USER + str(user) in dict_entity_embedding.keys():
+        user_candidate_items = recommend_topN_kge(user)
+        user_candidate_items_dict_kge[user] = user_candidate_items
 
 with open('candidates_dicts/user_candidate_items_dict_kge.pickle', 'wb') as f1:
     pickle.dump(user_candidate_items_dict_kge, f1, pickle.HIGHEST_PROTOCOL)

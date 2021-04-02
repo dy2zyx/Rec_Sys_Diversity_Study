@@ -112,85 +112,85 @@ print("Datasets loaded")
 ##########                                                  ##########
 ######################################################################
 
-# print("Tune CBF-MostPop")
-# # popularity part
-# item_popularity_dict = defaultdict(list)
-# for u, i, r in trainset:
-#     item_popularity_dict[i].append(u)
+print("Tune CBF-MostPop")
+# popularity part
+item_popularity_dict = defaultdict(list)
+for u, i, r in trainset:
+    item_popularity_dict[i].append(u)
 
-# popu_max = max([len(item_popularity_dict[i]) for i in item_popularity_dict.keys()])
-# popu_min = min([len(item_popularity_dict[i]) for i in item_popularity_dict.keys()])
+popu_max = max([len(item_popularity_dict[i]) for i in item_popularity_dict.keys()])
+popu_min = min([len(item_popularity_dict[i]) for i in item_popularity_dict.keys()])
 
-# item_popularity_dict_2 = dict()
-# for item in item_popularity_dict.keys():
-#     item_popu = (len(item_popularity_dict[item]) - popu_min) / (popu_max - popu_min)
-#     item_popularity_dict_2[item] = item_popu
+item_popularity_dict_2 = dict()
+for item in item_popularity_dict.keys():
+    item_popu = (len(item_popularity_dict[item]) - popu_min) / (popu_max - popu_min)
+    item_popularity_dict_2[item] = item_popu
 
-# # cbf part
-# sim_dict_file = '/Users/yudu/Documents/phd/dataset/Anime/KG_rec/sim_matrix_ebd.pickle'
-# with open(sim_dict_file, 'rb') as sim_matrix:
-#     distance_dict = pickle.load(sim_matrix)
+# cbf part
+sim_dict_file = '/Users/yudu/Documents/phd/dataset/Anime/KG_rec/sim_matrix_ebd.pickle'
+with open(sim_dict_file, 'rb') as sim_matrix:
+    distance_dict = pickle.load(sim_matrix)
 
-# user_positive_profils = defaultdict(list)
+user_positive_profils = defaultdict(list)
 
-# for user, item, rating in trainset:
-#     if rating > 7:
-#         user_positive_profils[user].append(item)
-
-
-# def predict_rating(user, item):
-#     length_profil = len(user_positive_profils[user])
-#     if length_profil == 0:
-#         return 0
-#     else:
-#         rating = 0
-#         for i in user_positive_profils[user]:
-#             sim_i_item = 1 - distance_dict[i][item]
-#             rating += sim_i_item
-#         return rating / length_profil
+for user, item, rating in trainset:
+    if rating > 7:
+        user_positive_profils[user].append(item)
 
 
-# def recommend_topN_Mostpop_CBF(user, weight):
-#     top_n = list()
-#     for un_rated_item in user_unrated_items[user]:
-#         item_popularity = item_popularity_dict_2[un_rated_item] if un_rated_item in item_popularity_dict_2.keys() else 0
-#         cbf_score = predict_rating(user, un_rated_item)
-#         score = weight * item_popularity + (1 - weight) * cbf_score
-#         top_n.append((un_rated_item, score))
-#     top_n.sort(key=lambda x: x[1], reverse=True)
-#     return top_n[:10]
+def predict_rating(user, item):
+    length_profil = len(user_positive_profils[user])
+    if length_profil == 0:
+        return 0
+    else:
+        rating = 0
+        for i in user_positive_profils[user]:
+            sim_i_item = 1 - distance_dict[i][item]
+            rating += sim_i_item
+        return rating / length_profil
 
 
-# tuning_params_cbf_pop = {
-#     'weight': (0, 1)
-# }
+def recommend_topN_Mostpop_CBF(user, weight):
+    top_n = list()
+    for un_rated_item in user_unrated_items[user]:
+        item_popularity = item_popularity_dict_2[un_rated_item] if un_rated_item in item_popularity_dict_2.keys() else 0
+        cbf_score = predict_rating(user, un_rated_item)
+        score = weight * item_popularity + (1 - weight) * cbf_score
+        top_n.append((un_rated_item, score))
+    top_n.sort(key=lambda x: x[1], reverse=True)
+    return top_n[:10]
 
 
-# def optim_func_cbf_pop(weight):
-#     MAP = 0
-#     nb_users = len(users_for_validate)
-#     for user in users_for_validate:
-#         top_n_list = recommend_topN_Mostpop_CBF(user, weight)
-#         ap_user = average_precision(user, top_n_list)
-#         MAP += ap_user
-#     MAP = MAP / nb_users
-#     return MAP
+tuning_params_cbf_pop = {
+    'weight': (0, 1)
+}
 
 
-# optimizer_cbf_pop = BayesianOptimization(
-#     f=optim_func_cbf_pop,
-#     pbounds=tuning_params_cbf_pop,
-#     verbose=0,  # verbose = 1 prints only when a maximum is observed, verbose = 0 is silent
-#     random_state=1,
-# )
+def optim_func_cbf_pop(weight):
+    MAP = 0
+    nb_users = len(users_for_validate)
+    for user in users_for_validate:
+        top_n_list = recommend_topN_Mostpop_CBF(user, weight)
+        ap_user = average_precision(user, top_n_list)
+        MAP += ap_user
+    MAP = MAP / nb_users
+    return MAP
 
-# logger = JSONLogger(path="CBF-TopPopular/logs_cbf_pop_PO.json")
-# optimizer_cbf_pop.subscribe(Events.OPTIMIZATION_STEP, logger)
 
-# optimizer_cbf_pop.maximize(
-#     init_points=0,
-#     n_iter=N_ITERATION_BO,
-# )
+optimizer_cbf_pop = BayesianOptimization(
+    f=optim_func_cbf_pop,
+    pbounds=tuning_params_cbf_pop,
+    verbose=0,  # verbose = 1 prints only when a maximum is observed, verbose = 0 is silent
+    random_state=1,
+)
+
+logger = JSONLogger(path="CBF-TopPopular/logs_cbf_pop_PO.json")
+optimizer_cbf_pop.subscribe(Events.OPTIMIZATION_STEP, logger)
+
+optimizer_cbf_pop.maximize(
+    init_points=0,
+    n_iter=N_ITERATION_BO,
+)
 
 ######################################################################
 ##########                                                  ##########
@@ -216,7 +216,7 @@ def recommend_topN_cf(user, model):
 
 
 tuning_params_cf = {
-    "k": (1, 200),
+    "k": (5, 10),
 }
 
 
@@ -241,7 +241,7 @@ optimizer_cf = BayesianOptimization(
     random_state=1,
 )
 
-logger = JSONLogger(path="IBCF/logs_ibcf_PO3.json")
+logger = JSONLogger(path="IBCF/logs_ibcf_PO4_test3.json")
 optimizer_cf.subscribe(Events.OPTIMIZATION_STEP, logger)
 
 optimizer_cf.maximize(
@@ -285,7 +285,7 @@ def optim_func_svd(n_factors, n_epochs, lr_all, reg_all):
     for user in users_for_validate:
         top_n_list = recommend_topN_svd(user, svd)
         ap_user = average_precision(user, top_n_list)
-        MAP += ap_user  
+        MAP += ap_user
     MAP = MAP / nb_users
     return MAP
 
@@ -311,96 +311,98 @@ optimizer_svd.maximize(
 # ##########                                                  ##########
 # ######################################################################
 
-# print("Tune KGE")
-# BASE_URI = "http://example.org/rating_ontology"
-# USER_ = BASE_URI + "/User/User_"
-# ITEM_ = BASE_URI + "/Item/Item_"
-# TASTE_ = BASE_URI + "/Taste#"
+print("Tune KGE")
+BASE_URI = "http://example.org/rating_ontology"
+USER_ = BASE_URI + "/User/User_"
+ITEM_ = BASE_URI + "/Item/Item_"
+TASTE_ = BASE_URI + "/Taste#"
 
-# """function to recommend the topN items for a user given the rating prediction model"""
-
-
-# def recommend_topN_kge(user, dict_entity_embedding, dict_relation_embedding):
-#     top_n = list()
-#     for un_rated_item in user_unrated_items[user]:
-#         user_embedding = dict_entity_embedding[USER_ + str(user)]
-#         r_like_embedding = dict_relation_embedding[TASTE_ + 'like']
-#         item_embedding = dict_entity_embedding[ITEM_ + str(un_rated_item)]
-#         score = compute_score(user_embedding, r_like_embedding, item_embedding)
-#         top_n.append((un_rated_item, score))
-#     top_n.sort(key=lambda x: x[1], reverse=True)
-#     return top_n[:10]
+"""function to recommend the topN items for a user given the rating prediction model"""
 
 
-# def compute_score(h_embedding, r_embedding, t_embedding):
-#     sum_vec = np.asarray(h_embedding) + np.asarray(r_embedding) - np.asarray(t_embedding)
-#     distance_l1 = np.linalg.norm(sum_vec, ord=1)
-#     return -distance_l1
+def recommend_topN_kge(user, dict_entity_embedding, dict_relation_embedding):
+    top_n = list()
+    unmapped_items = ['1626', '2221', '2316', '32093', '9774']
+    for un_rated_item in user_unrated_items[user]:
+        if not un_rated_item in unmapped_items:
+            user_embedding = dict_entity_embedding[USER_ + str(user)]
+            r_like_embedding = dict_relation_embedding[TASTE_ + 'like']
+            item_embedding = dict_entity_embedding[ITEM_ + str(un_rated_item)]
+            score = compute_score(user_embedding, r_like_embedding, item_embedding)
+            top_n.append((un_rated_item, score))
+    top_n.sort(key=lambda x: x[1], reverse=True)
+    return top_n[:10]
 
 
-# tuning_params_kge = {
-#     "embedding_dim": (10, 200),
-#     "margin_loss": (1, 10),
-#     "lr": (0.001, 0.1),
-#     "batch_size": (16, 256),
-#     "num_epochs": (100, 1000)
-# }
+def compute_score(h_embedding, r_embedding, t_embedding):
+    sum_vec = np.asarray(h_embedding) + np.asarray(r_embedding) - np.asarray(t_embedding)
+    distance_l1 = np.linalg.norm(sum_vec, ord=1)
+    return -distance_l1
 
 
-# def optim_func_kge(embedding_dim, margin_loss, lr, batch_size, num_epochs):
-#     embedding_dim = int(embedding_dim)
-#     margin_loss = int(margin_loss)
-#     batch_size = int(batch_size)
-#     num_epochs = int(num_epochs)
-#     # print(embedding_dim, margin_loss, batch_size, num_epochs)
+tuning_params_kge = {
+    "embedding_dim": (10, 200),
+    "margin_loss": (1, 10),
+    "lr": (0.001, 0.1),
+    "batch_size": (16, 256),
+    "num_epochs": (100, 1000)
+}
 
-#     output_directory = 'KGE/train_model/'
-#     config = dict(
-#         training_set_path='Files/kg_train.nt',
-#         execution_mode='Training_mode',
-#         kg_embedding_model_name='TransE',
-#         embedding_dim=embedding_dim,
-#         normalization_of_entities=2,  # corresponds to L2
-#         scoring_function=1,  # corresponds to L1
-#         margin_loss=margin_loss,
-#         learning_rate=lr,
-#         batch_size=batch_size,
-#         num_epochs=num_epochs,
-#         filter_negative_triples=True,
-#         random_seed=0,
-#         preferred_device='gpu',
-#     )
-#     # print(config)
-#     results = pykeen.run(
-#         config=config,
-#         output_directory=output_directory,
-#     )
 
-#     dict_entity_embedding = list(results.results.values())[2]
-#     dict_relation_embedding = list(results.results.values())[3]
-#     MAP = 0
-#     nb_users = len(users_for_validate)
-#     for user in users_for_validate[:10]:
-#         top_n_list = recommend_topN_kge(user, dict_entity_embedding, dict_relation_embedding)
-#         ap_user = average_precision(user, top_n_list)
-#         MAP += ap_user
-#     MAP = MAP / nb_users
-#     return MAP
+def optim_func_kge(embedding_dim, margin_loss, lr, batch_size, num_epochs):
+    embedding_dim = int(embedding_dim)
+    margin_loss = int(margin_loss)
+    batch_size = int(batch_size)
+    num_epochs = int(num_epochs)
+    # print(embedding_dim, margin_loss, batch_size, num_epochs)
 
-# optimizer_kge = BayesianOptimization(
-#     f=optim_func_kge,
-#     pbounds=tuning_params_kge,
-#     verbose=0, # verbose = 1 prints only when a maximum is observed, verbose = 0 is silent
-#     random_state=1,
-# )
+    output_directory = 'KGE/train_model/'
+    config = dict(
+        training_set_path='Files/kg_train.nt',
+        execution_mode='Training_mode',
+        kg_embedding_model_name='TransE',
+        embedding_dim=embedding_dim,
+        normalization_of_entities=2,  # corresponds to L2
+        scoring_function=1,  # corresponds to L1
+        margin_loss=margin_loss,
+        learning_rate=lr,
+        batch_size=batch_size,
+        num_epochs=num_epochs,
+        filter_negative_triples=True,
+        random_seed=0,
+        preferred_device='gpu',
+    )
+    # print(config)
+    results = pykeen.run(
+        config=config,
+        output_directory=output_directory,
+    )
 
-# logger = JSONLogger(path="KGE/logs_kge_PO.json")
-# optimizer_kge.subscribe(Events.OPTIMIZATION_STEP, logger)
+    dict_entity_embedding = list(results.results.values())[2]
+    dict_relation_embedding = list(results.results.values())[3]
+    MAP = 0
+    nb_users = len(users_for_validate)
+    for user in users_for_validate[:10]:
+        top_n_list = recommend_topN_kge(user, dict_entity_embedding, dict_relation_embedding)
+        ap_user = average_precision(user, top_n_list)
+        MAP += ap_user
+    MAP = MAP / nb_users
+    return MAP
 
-# optimizer_kge.maximize(
-#     init_points=0,
-#     n_iter=N_ITERATION_BO
-# )
+optimizer_kge = BayesianOptimization(
+    f=optim_func_kge,
+    pbounds=tuning_params_kge,
+    verbose=0, # verbose = 1 prints only when a maximum is observed, verbose = 0 is silent
+    random_state=1,
+)
+
+logger = JSONLogger(path="KGE/logs_kge_PO.json")
+optimizer_kge.subscribe(Events.OPTIMIZATION_STEP, logger)
+
+optimizer_kge.maximize(
+    init_points=0,
+    n_iter=N_ITERATION_BO
+)
 
 # ######################################################################
 # ##########                                                  ##########
