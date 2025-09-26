@@ -2,7 +2,14 @@
 
 This repository contains the source code of the following research work:
 
-* Is diversity optimization always suitable? Towards a better understanding of diversity within recommendation approaches
+* [Is diversity optimization always suitable? Towards a better understanding of diversity within recommendation approaches](https://dl.acm.org/doi/10.1016/j.ipm.2021.102721)
+
+
+### Citation
+
+```
+Yu Du, Sylvie Ranwez, Nicolas Sutton-Charani, and Vincent Ranwez. 2021. Is diversity optimization always suitable? Toward a better understanding of diversity within recommendation approaches. Inf. Process. Manage. 58, 6 (Nov 2021). https://doi.org/10.1016/j.ipm.2021.102721
+```
 
 The aim of the research is to better understand how different types of recommender systems perform, in terms of the diversity criterion.
 
